@@ -73,6 +73,9 @@ export class AppComponent implements AfterViewInit {
         this.record = record;
         this.previewService.getPreviewData(record.id, this.searchService.query).subscribe(data => {
             const url = this.previewService.makeDownloadUrl(data.documentCachedContentUrl) || '';
+            
+            // this.iframe.nativeElement.src = url;
+            // return;
                         
             // simple fetch
             // fetch(url).then(r => {
@@ -100,6 +103,9 @@ export class AppComponent implements AfterViewInit {
         const doc = dom.parseFromString(buffer, "text/html");
         
         // add base href when not existing
+        const links = doc.querySelectorAll("head > link");
+        links.forEach(link => link.setAttribute("defer", ""));
+        
         const baseHrefCounter = doc.querySelectorAll("head > base");
         if (baseHrefCounter.length === 0) {
             const base = /(^.*)(file.htm$)/gm.exec(url);
@@ -107,21 +113,24 @@ export class AppComponent implements AfterViewInit {
                 const baseHref = doc.createElement("base");
                 console.log("make url", { origin: this.appService.origin, url: base[0], base });
                 baseHref.setAttribute("href", this.appService.origin + base[0]);
-                doc.head.append(baseHref);
+                // base href should be the first child
+                doc.head.prepend(baseHref);
+
                 console.log("Add: base href", baseHref);
             }
         }
+
         
         /**
          * object manipulations
          */
-         const nodes = doc.querySelectorAll('object');
+        const nodes = doc.querySelectorAll('object');
     
         nodes.forEach(node => {
             if (node.data) {
                 // extract svg name from ['data'] attribute
                 const regex = /^.*\/(.+svg$)/gm.exec(node.data);
-                if (regex !== null) {
+                if (regex !== null) {                    
                     const name = regex[1];
                     const img = doc.createElement('img');
                     img.src = `file_files/${name}`;
@@ -129,8 +138,8 @@ export class AppComponent implements AfterViewInit {
            
                     img.className = node.className;
                     img.style.cssText = node.style.cssText;
-                 
-                    // replace objet with <img>
+                    
+                    // replace objet with <iframe>
                     node.parentNode?.replaceChild(img, node);
                 }
             }

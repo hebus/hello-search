@@ -25,9 +25,7 @@
     <div class="container">
         <div *ngIf="results$ | async; let results" class="records">
             <div *ngFor="let record of results.records" class="record" (click)="openPreview(record)">
-                <a href="{{record.url1}}">
-                    <h3 [innerHtml]="record.displayTitle || record.title"></h3>
-                </a>
+                <h3 [innerHtml]="record.displayTitle || record.title"></h3>
                 <div class="source">{{record.url1}}</div>
                 <p *ngIf="record.relevantExtracts" [innerHTML]="record.relevantExtracts"></p>
             </div>
