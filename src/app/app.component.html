@@ -21,7 +21,7 @@
             <div>{{notification.text | sqMessage:{values: notification.params} }}</div>
         </div>
     </ng-container>
-    
+
     <div class="container">
         <div *ngIf="results$ | async; let results" class="records">
             <div *ngFor="let record of results.records" class="record" (click)="openPreview(record)">
@@ -31,9 +31,9 @@
             </div>
         </div>
         <div class="preview">
-            <!-- <sq-facet-preview-2 #facet [record]="record" [query]="searchService.query"></sq-facet-preview-2> -->
-            <iframe #iframe></iframe>
+            <!-- <iframe #iframe></iframe> -->
+            <sq-preview-document-iframe-v2 [scalingFactor]="0.6"></sq-preview-document-iframe-v2>
         </div>
     </div>
-    
+
 </div>

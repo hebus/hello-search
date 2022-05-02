@@ -7,8 +7,8 @@ import {LoginService} from "@sinequa/core/login";
 import {AppService, Query} from "@sinequa/core/app-utils";
 import {NotificationsService, Notification} from "@sinequa/core/notification";
 
-import { SearchService } from "@sinequa/components/search";
-import { PreviewService } from "@sinequa/components/preview";
+import { DocumentCacheService } from "./preview/document-cache-parser";
+import { BsFacetPreviewComponent2 } from "@sinequa/components/preview";
 
 @Component({
     selector: "app",
@@ -17,6 +17,7 @@ import { PreviewService } from "@sinequa/components/preview";
 })
 export class AppComponent implements AfterViewInit {
     @ViewChild('iframe') iframe: ElementRef;
+    @ViewChild('facet') facet: BsFacetPreviewComponent2;
     
     searchControl: FormControl;
     form: FormGroup;
@@ -27,8 +28,7 @@ export class AppComponent implements AfterViewInit {
         public loginService: LoginService,
         public appService: AppService,
         public queryWebService: QueryWebService,
-        public searchService: SearchService,
-        public previewService: PreviewService,
+        public documentCacheService: DocumentCacheService,
         public notificationsService: NotificationsService) {
 
 
@@ -36,6 +36,13 @@ export class AppComponent implements AfterViewInit {
         this.form = this.formBuilder.group({
             search: this.searchControl
         });
+        
+        // when preview document is fetched from cache, set iframe url with blobUrl related to
+        // this.documentCacheService.blobUrl.subscribe(value => this.iframe.nativeElement.src = value);
+        
+        // to work with facet preview 2
+        // this.documentCacheService.blobUrl.subscribe(value => this.facet.downloadUrl = value);
+
     }
 
     ngAfterViewInit() {
@@ -68,98 +75,7 @@ export class AppComponent implements AfterViewInit {
         return true;
     }
     
-    record: Record;
     openPreview(record: Record) {
-        this.record = record;
-        this.previewService.getPreviewData(record.id, this.searchService.query).subscribe(data => {
-            const url = this.previewService.makeDownloadUrl(data.documentCachedContentUrl) || '';
-            
-            // this.iframe.nativeElement.src = url;
-            // return;
-                        
-            // simple fetch
-            // fetch(url).then(r => {
-            //     r.blob().then(blob => {
-            //         const blobUrl = URL.createObjectURL(blob);
-            //         this.iframe.nativeElement.src = blobUrl;
-            //     });
-            // });
-            
-            // fetch and change images attribute
-            fetch(url).then(r => {
-                const contentType = r.headers.get("content-Type") || '';
-                return r.text().then(text => {
-                    const html = this.extract(text, url);
-                    const blob = new Blob([html], { type: contentType });
-                    const blobUrl = URL.createObjectURL(blob);
-                    this.iframe.nativeElement.src = blobUrl;
-                })
-            })
-        })
-    }
-    
-    extract(buffer, url): string {
-        const dom = new DOMParser();
-        const doc = dom.parseFromString(buffer, "text/html");
-        
-        // add base href when not existing
-        const links = doc.querySelectorAll("head > link");
-        links.forEach(link => link.setAttribute("defer", ""));
-        
-        const baseHrefCounter = doc.querySelectorAll("head > base");
-        if (baseHrefCounter.length === 0) {
-            const base = /(^.*)(file.htm$)/gm.exec(url);
-            if (base !== null) {
-                const baseHref = doc.createElement("base");
-                console.log("make url", { origin: this.appService.origin, url: base[0], base });
-                baseHref.setAttribute("href", this.appService.origin + base[0]);
-                // base href should be the first child
-                doc.head.prepend(baseHref);
-
-                console.log("Add: base href", baseHref);
-            }
-        }
-
-        
-        /**
-         * object manipulations
-         */
-        const nodes = doc.querySelectorAll('object');
-    
-        nodes.forEach(node => {
-            if (node.data) {
-                // extract svg name from ['data'] attribute
-                const regex = /^.*\/(.+svg$)/gm.exec(node.data);
-                if (regex !== null) {                    
-                    const name = regex[1];
-                    const img = doc.createElement('img');
-                    img.src = `file_files/${name}`;
-                    img.setAttribute("loading", "lazy");
-           
-                    img.className = node.className;
-                    img.style.cssText = node.style.cssText;
-                    
-                    // replace objet with <iframe>
-                    node.parentNode?.replaceChild(img, node);
-                }
-            }
-         })
-         console.log("Replace <object> with <img>:", nodes.length);
-        
-        /**
-         * images manipulations
-         */
-        const images = doc.querySelectorAll('img');
-        images.forEach(image => {
-            // image.src = "https://localhost:4200/assets/vanilla-logo.png";
-            // image.srcset = "";
-            image.setAttribute("loading", "lazy");
-            image.setAttribute("data-sinequa", "Take the control!!");
-        });
-        console.log("Update images:", images.length);
-        
-        // return the document
-        // I can't serialize it, because I need to keep scripts undamaged
-        return doc.documentElement.innerHTML;
+        this.documentCacheService.openPreview(record.id);
     }
 };
