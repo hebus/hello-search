@@ -18,7 +18,7 @@ import { BsFacetPreviewComponent2 } from "@sinequa/components/preview";
 export class AppComponent implements AfterViewInit {
     @ViewChild('iframe') iframe: ElementRef;
     @ViewChild('facet') facet: BsFacetPreviewComponent2;
-    
+
     searchControl: FormControl;
     form: FormGroup;
     results$: Observable<Results> | undefined;
@@ -36,10 +36,10 @@ export class AppComponent implements AfterViewInit {
         this.form = this.formBuilder.group({
             search: this.searchControl
         });
-        
+
         // when preview document is fetched from cache, set iframe url with blobUrl related to
         // this.documentCacheService.blobUrl.subscribe(value => this.iframe.nativeElement.src = value);
-        
+
         // to work with facet preview 2
         // this.documentCacheService.blobUrl.subscribe(value => this.facet.downloadUrl = value);
 
@@ -74,8 +74,8 @@ export class AppComponent implements AfterViewInit {
         setTimeout(() => this.notificationsService.deleteNotification(notification), 5000);
         return true;
     }
-    
-    openPreview(record: Record) {
-        this.documentCacheService.openPreview(record.id);
+
+    openPreview(record: Record, mode?: 'default' | "fetch" | "transform") {
+        this.documentCacheService.openPreview(record.id, mode);
     }
 };

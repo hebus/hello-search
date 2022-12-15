@@ -30,6 +30,7 @@ export function StartConfigInitializer(startConfigWebService: StartConfigWebServ
 export const startConfig: StartConfig = {
     app: "training",
     production: environment.production,
+    autoSAMLProvider: "identity-dev",
     auditEnabled: false
 };
 
@@ -45,7 +46,7 @@ export const startConfig: StartConfig = {
         LoginModule.forRoot(), // Just use default login modal
         ModalModule.forRoot(),
         BsSearchModule.forRoot({}),
-        
+
         BsFacetModule,
         BsPreviewModule,
     ],

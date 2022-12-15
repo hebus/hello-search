@@ -1,0 +1,15 @@
+{
+  "configurations": [
+    {
+      "name": "Attach to Chrome",
+      "port": 9223,
+      "request": "attach",
+      "type": "pwa-chrome",
+      "urlFilter": "http://localhost:4200/*",
+      "webRoot": "${workspaceFolder}",
+      "sourceMapPathOverrides": {
+        "webpack:///./*": "${workspaceFolder}/*",
+      }
+    }
+  ]
+}

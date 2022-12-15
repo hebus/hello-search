@@ -3,6 +3,7 @@ import { Injectable } from "@angular/core";
 import { PreviewService } from "@sinequa/components/preview";
 import { SearchService } from "@sinequa/components/search";
 import { AppService } from "@sinequa/core/app-utils";
+import { PreviewData } from "@sinequa/core/web-services";
 import { Subject } from "rxjs";
 
 @Injectable({ providedIn: "root" })
@@ -34,34 +35,34 @@ export class DocumentCacheService {
    * to be used in the iframe.
    * @param {string} id - string - the id of the document to preview
    */
-  openPreview(id: string) {
-    this.previewService
-      .getPreviewData(id, this.searchService.query)
-      .subscribe((data) => {
-        const url =
-          this.previewService.makeDownloadUrl(data.documentCachedContentUrl) ||
-          "";
+  openPreview(id: string, mode: "default" | "fetch" | "transform" = "transform") {
+    this.previewService.getPreviewData(id, this.searchService.query).subscribe((data: PreviewData) => {
+      const url = this.previewService.makeDownloadUrl(data.documentCachedContentUrl) || "";
 
-        // no transformations
-        // this.blobUrl.next(url);
-        // return;
+      // no transformations
+      if (mode === "default") {
+        this.blobUrl.next(url);
+        return;
+      }
 
-        // simple fetch with no transformations
-        // fetch(url).then(r => {
-        //     r.blob().then(blob => {
-        //         const blobUrl = URL.createObjectURL(blob);
-        //         this.blobUrl.next(blobUrl);
-        //     });
-        // });
-        // return;
+      // simple fetch with no transformations
+      if (mode === "fetch") {
+        fetch(url, { mode: "no-cors" }).then((r) => {
+          r.blob().then((blob) => {
+            const blobUrl = URL.createObjectURL(blob);
+            this.blobUrl.next(blobUrl);
+          });
+        });
+        return;
+      }
 
-        // fetch and DOM transformations
-        this.fetchUrl(url);
-      });
+      // fetch and DOM transformations
+      this.fetchUrl(url);
+    });
   }
 
-  fetchUrl(url: string, page = 1) {
-    fetch(url).then((r) => {
+  fetchUrl(url: string, page = 1, url1?: string) {
+    fetch(url, { mode: "no-cors" }).then((r) => {
       const contentType = r.headers.get("content-Type") || "";
       return r.text().then((text) => {
         const html = this.extract(text, url, page);
@@ -69,6 +70,7 @@ export class DocumentCacheService {
         const blobUrl = URL.createObjectURL(blob);
         // this.iframe.nativeElement.src = blobUrl;
         this.blobUrl.next(blobUrl);
+        URL.revokeObjectURL(blobUrl);
       });
     });
   }
@@ -78,41 +80,16 @@ export class DocumentCacheService {
     const doc = dom.parseFromString(buffer, "text/html");
 
     // add base href when not existing
-    const links = doc.querySelectorAll("head > link");
-    links.forEach((link) => link.setAttribute("defer", ""));
+    // const links = doc.querySelectorAll("head > link");
+    // links.forEach((link) => link.setAttribute("defer", ""));
 
-    const baseHrefCounter = doc.querySelectorAll("head > base");
-    if (baseHrefCounter.length === 0) {
-      const base = /(^.*)(file.*.htm.*$)/gm.exec(url);
-      if (base !== null) {
-        const baseHref = doc.createElement("base");
-        baseHref.setAttribute("href", this.appService.origin + base[1]);
+    const links = doc.querySelectorAll("link");
+    links.forEach((link: HTMLLinkElement) => link.setAttribute("href", link.href));
 
-        // set current base href url to allow navigation
-        this.url = base[1];
-        console.log("base url:", this.url);
-
-        // base href should be the first child
-        doc.head.prepend(baseHref);
-
-        console.log("override base href", baseHref);
-      }
-    }
-
-    // remove scripts tag from head
-    // is page navigator exists, replace script with this one
-
-    const pageHeader = doc.getElementsByClassName("ph");
-    if (pageHeader !== null) {
-      // const pages = doc.getElementById('pages');
-      // if (pages !== null) {
-      const scripts = doc.querySelectorAll("head > script");
-      scripts.forEach((script) => {
-        if (script !== null && script.parentNode !== null)
-          script.parentNode.removeChild(script);
-      });
-      doc.head.appendChild(this.customScript(doc, page));
-    }
+    const scripts = doc.querySelectorAll("script");
+    scripts.forEach((script: HTMLScriptElement) => {
+      if (script.src.length > 0) script.setAttribute("src", script.src);
+    });
 
     /**
      * convert <object><embed/></object> to <iframe></iframe>
@@ -145,17 +122,66 @@ export class DocumentCacheService {
     const images = doc.querySelectorAll("img");
     images.forEach((image) => {
       image.setAttribute("loading", "lazy");
+      if (image.src.length > 0) image.setAttribute("src", image.src);
+      if (image.getAttribute("data-src")?.length > 0) image.setAttribute("src", image.getAttribute("data-src"));
     });
     console.log("images overrides:", images.length);
+
+    // remove scripts tag from head
+    // is page navigator exists, replace script with this one
+
+    const pageHeader = doc.getElementsByClassName("ph");
+    if (pageHeader.length > 0) {
+      // const pages = doc.getElementById('pages');
+      // if (pages !== null) {
+      const scripts = doc.querySelectorAll("head > script");
+      scripts.forEach((script) => {
+        if (script !== null && script.parentNode !== null) script.parentNode.removeChild(script);
+      });
+      doc.head.appendChild(this.customScript(doc, page));
+    }
+
+    // overrides base href
+    // when removing base href, better to do this at the end of all maodifications
+    // because each html element's href are based on
+    const baseHrefCounter = doc.querySelectorAll<HTMLBaseElement>("head > base");
+    if (baseHrefCounter.length > 0) {
+      baseHrefCounter[0].remove();
+
+      // // new base href
+      // const base = /(^.*)(file.*.htm.*$)/gm.exec(url);
+      // if (base !== null) {
+      //   const baseHref = doc.createElement("base");
+      //   baseHref.setAttribute("href", this.appService.origin + base[1]);
+
+      //   // set current base href url to allow navigation
+      //   this.url = base[1];
+      //   console.log("base url:", this.url);
+
+      //   // base href should be the first child
+      //   doc.head.prepend(baseHref);
+
+      //   console.log("override base href", baseHref);
+      // }
+    }
+
+
+    // remove body scripts
+    const scriptsToRemove = doc.querySelectorAll("body > script");
+    scriptsToRemove.forEach((script:HTMLScriptElement) => {
+      if (script.src.includes('_nuxt')) script.remove();
+    });
 
     /**
      * fix font glitches which can occurs with pdf converters
      */
-    this.fixFontFamily(doc);
+    // this.fixFontFamily(doc);
 
     // return the document
     // I can't serialize it, because I need to keep scripts undamaged
+    // console.log("DOM", doc.documentElement.innerHTML);
     return doc.documentElement.innerHTML;
+
   }
 
   private customScript(doc: Document, page = 1): HTMLScriptElement {
@@ -180,7 +206,7 @@ export class DocumentCacheService {
         SetPage(pg);
         }
     */
-    const scriptSource = `    
+    const scriptSource = `
         var defPage=${page};var firstPage=1;var lastPage;var _p;
         function CurUrl() {return _p.options[_p.selectedIndex].value;}
         function CurPage() {return _p.selectedIndex+firstPage;}

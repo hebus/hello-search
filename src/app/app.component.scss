@@ -14,7 +14,7 @@
   .records {
     width: 50%;
     overflow-x: hidden;
-    
+
     .record {
       h3 {
         margin: 0.5em 0 0 0;
@@ -37,8 +37,8 @@
   }
 
   .preview {
-    flex-basis: 50%;
-    
+    flex-basis: 100%;
+
     iframe {
       height: 100%;
       width: 100%;

@@ -24,8 +24,13 @@
 
     <div class="container">
         <div *ngIf="results$ | async; let results" class="records">
-            <div *ngFor="let record of results.records" class="record" (click)="openPreview(record)">
+            <div *ngFor="let record of results.records" class="record">
                 <h3 [innerHtml]="record.displayTitle || record.title"></h3>
+                <div class="btn-group">
+                    <button type="button" class="btn btn-primary" (click)="openPreview(record, 'default')">Normal</button>
+                    <button type="button" class="btn btn-primary" (click)="openPreview(record, 'fetch')">Fetch</button>
+                    <button type="button" class="btn btn-primary" (click)="openPreview(record, 'transform')">Transform</button>
+                </div>
                 <div class="source">{{record.url1}}</div>
                 <p *ngIf="record.relevantExtracts" [innerHTML]="record.relevantExtracts"></p>
             </div>
