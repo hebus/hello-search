@@ -20,7 +20,7 @@ import {AppComponent} from "./app.component";
 import {environment} from "../environments/environment";
 import { BsSearchModule } from "@sinequa/components/search";
 
-import { PreviewDocumentIframeV2 } from "./preview/preview-document-iframe-v2.component";
+import { PreviewDocumentIframeV2Component } from "./preview/preview-document-iframe-v2.component";
 
 export function StartConfigInitializer(startConfigWebService: StartConfigWebService): () => Promise<StartConfig> {
     const init = () => startConfigWebService.fetchPreLoginAppConfig().toPromise();
@@ -52,7 +52,7 @@ export const startConfig: StartConfig = {
     ],
     declarations: [
         AppComponent,
-        PreviewDocumentIframeV2
+        PreviewDocumentIframeV2Component
     ],
     providers: [
         // Provides an APP_INITIALIZER which will fetch application configuration information from the Sinequa

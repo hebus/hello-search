@@ -30,7 +30,7 @@ import { DocumentCacheService } from "./document-cache-parser";
     template: `
                 <iframe #documentFrame
                     loading="lazy"
-                    [attr.sandbox]="_sandbox">
+                    sandbox="allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts">
                 </iframe>`,
     changeDetection: ChangeDetectionStrategy.OnPush,
     styles: [`
@@ -53,7 +53,7 @@ iframe {
     -moz-transform-origin: 0 0;
     -o-transform-origin: 0 0;
     -webkit-transform-origin: 0 0;
-    
+
     transition: opacity 0.2s ease-in-out;
 }
 
@@ -63,13 +63,11 @@ iframe {
 }
     `]
 })
-export class PreviewDocumentIframeV2 implements OnChanges, OnInit, OnDestroy {
-    defaultSandbox: string = "allow-forms allow-modals allow-orientation-lock allow-pointer-lock allow-popups allow-popups-to-escape-sandbox allow-presentation allow-same-origin allow-scripts";
-    @Input() sandbox: string | null | undefined;
+export class PreviewDocumentIframeV2Component implements OnChanges, OnInit, OnDestroy {
     @Input() downloadUrl: string;
     @Input() scalingFactor: number = 1.0;
     @Output() onPreviewReady = new EventEmitter<PreviewDocument>();
-    
+
     // page could change when location.href change or when user click on a tab (sheet case)
     // when URL a string is sent otherwise a PreviewDocument
     @Output() pageChange = new EventEmitter<string | PreviewDocument>();
@@ -77,33 +75,32 @@ export class PreviewDocumentIframeV2 implements OnChanges, OnInit, OnDestroy {
     @ContentChild('tooltip', {read: ElementRef, static: false}) tooltip: ElementRef; // see https://stackoverflow.com/questions/45343810/how-to-access-the-nativeelement-of-a-component-in-angular4
     @ContentChild('minimap', {read: ElementRef, static: false}) minimap: ElementRef; // see https://stackoverflow.com/questions/45343810/how-to-access-the-nativeelement-of-a-component-in-angular4
 
-    // Must be undefined by default, because if a default value is set, 
-    // if we set it to undefined in the future, this new (undefined) value 
+    // Must be undefined by default, because if a default value is set,
+    // if we set it to undefined in the future, this new (undefined) value
     // is not used by the iFrame as if it used the previous value
     public _sandbox: string | null | undefined;
-    
+
     private previewDocument: PreviewDocument;
     readonly previewDocLoadHandler;
 
     constructor(
         private documentCacheService: DocumentCacheService,
         private cdr: ChangeDetectorRef) {
-        
+
         this.previewDocLoadHandler = this.onPreviewDocLoad.bind(this);
-        
+
         this.documentCacheService.blobUrl.subscribe(value => {
-            this._sandbox = (this.sandbox === null) ? undefined : Utils.isString(this.sandbox) ? this.sandbox : this.defaultSandbox;
             this.downloadUrl = value;
-            this.documentFrame.nativeElement.style.opacity = "0";                   
-            this.documentFrame.nativeElement.src = value;    
+            this.documentFrame.nativeElement.style.opacity = "0";
+            this.documentFrame.nativeElement.src = value;
         });
     }
 
     public onPreviewDocLoad() {
         if (this.downloadUrl === undefined) return;
-        
+
         // if document loaded in less than 2s, set opacity to 100%
-        
+
         setTimeout(() => {
             if (this.documentFrame.nativeElement.contentDocument !== null) {
                 const body = this.documentFrame.nativeElement.contentDocument.body;
@@ -111,14 +108,14 @@ export class PreviewDocumentIframeV2 implements OnChanges, OnInit, OnDestroy {
             }
             this.documentFrame.nativeElement.style.opacity = "1";
         }, 1000);
-        
+
         // do nothing when user has clicked on a document link
         if (this.documentFrame.nativeElement.contentDocument === null) return;
 
         // previewDocument must be created here when document is fully loaded
         // because in case of sheet, PreviewDocument constructor change.
         this.previewDocument = new PreviewDocument(this.documentFrame);
-        
+
         // SVG highlight:
         //   background rectangle (highlight) were added to the SVG by the HTML generator (C#), but html generation is
         //   not able to know the geometry of the text. It is up to the browser to compute the position and size of the
@@ -136,7 +133,7 @@ export class PreviewDocumentIframeV2 implements OnChanges, OnInit, OnDestroy {
             *          </frameset>
             *          ...
             * </iframe>
-            */ 
+            */
             const sheetFrame = this.documentFrame.nativeElement.contentDocument.getElementsByName("frSheet");
             if(sheetFrame.length > 0) {
                 sheetFrame[0].removeEventListener("load", () => {});
@@ -182,7 +179,7 @@ export class PreviewDocumentIframeV2 implements OnChanges, OnInit, OnDestroy {
             body.style.cssText = `--factor: ${this.scalingFactor};`;
         } else {
             // remove "virtually" the current IFrame's document
-            this.documentFrame.nativeElement.style.opacity = "0";                   
+            this.documentFrame.nativeElement.style.opacity = "0";
         }
     }
 }

@@ -134,8 +134,8 @@ export class DocumentCacheService {
     if (pageHeader.length > 0) {
       // const pages = doc.getElementById('pages');
       // if (pages !== null) {
-      const scripts = doc.querySelectorAll("head > script");
-      scripts.forEach((script) => {
+      const _scripts = doc.querySelectorAll("head > script");
+      _scripts.forEach((script) => {
         if (script !== null && script.parentNode !== null) script.parentNode.removeChild(script);
       });
       doc.head.appendChild(this.customScript(doc, page));

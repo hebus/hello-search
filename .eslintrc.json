@@ -24,6 +24,11 @@
         "plugin:@angular-eslint/template/process-inline-templates"
       ],
       "rules": {
+        "@angular-eslint/component-selector": ["error", {
+          "type": "element",
+          "prefix": ["app", "sq"],
+          "style": "kebab-case"
+        }],
         "@angular-eslint/no-input-rename": "off",
         "@angular-eslint/no-output-native": "off",
         "@angular-eslint/no-output-rename": "off",

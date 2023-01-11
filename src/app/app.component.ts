@@ -11,7 +11,7 @@ import { DocumentCacheService } from "./preview/document-cache-parser";
 import { BsFacetPreviewComponent2 } from "@sinequa/components/preview";
 
 @Component({
-    selector: "app",
+    selector: "app-root",
     templateUrl: "./app.component.html",
     styleUrls: ["./app.component.scss"]
 })
